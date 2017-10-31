@@ -7,13 +7,15 @@ import (
 	"strings"
 
 	"github.com/Galish/golang-assignment/crawler"
+	"github.com/Galish/golang-assignment/frontend"
 	"github.com/micro/go-micro/broker"
 	"github.com/micro/go-plugins/broker/rabbitmq"
 )
 
 const (
-	amqpAddr = "amqp://localhost"
-	topic    = "topic.crawler"
+	amqpAddr     = "amqp://localhost"
+	topicCrawler = "topic.crawler"
+	topicSearch  = "topic.search"
 )
 
 var (
@@ -24,7 +26,7 @@ var (
 func subscribe() {
 	fmt.Println("Broker listening:", amqpAddr)
 
-	_, err := amqpBroker.Subscribe(topic, func(p broker.Publication) error {
+	_, err := amqpBroker.Subscribe(topicCrawler, func(p broker.Publication) error {
 		message := crawler.Message{}
 		json.Unmarshal(p.Message().Body, &message)
 
@@ -41,6 +43,52 @@ func subscribe() {
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	// _, err :=
+	amqpBroker.Subscribe(topicSearch, func(p broker.Publication) error {
+		search := frontend.Search{}
+		json.Unmarshal(p.Message().Body, &search)
+		id := p.Message().Header["ID"]
+		term := search.Term
+		res := search.Result
+
+		if res != nil {
+			return nil
+		}
+
+		fmt.Printf("[sub] received search term #%s \"%s\"\n", id, term)
+
+		messages, err := find(search.Term)
+
+		if err != nil {
+			fmt.Println("search error:", err)
+		}
+
+		result := frontend.Search{
+			Term:   term,
+			Result: messages,
+		}
+		resultJSON, _ := json.Marshal(result)
+
+		msg := &broker.Message{
+			Header: map[string]string{
+				"ID": id,
+			},
+			Body: resultJSON,
+		}
+
+		if err := amqpBroker.Publish(topicSearch, msg); err != nil {
+			log.Printf("[pub] failed: %v", err)
+		} else {
+			fmt.Printf("[pub] pubbed search result #%s (%d) \n", id, len(messages))
+		}
+
+		return nil
+	})
+
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 }
 
 func put(key string, value []byte) {
@@ -66,6 +114,33 @@ func index(key string, HTML string) {
 		// 	fmt.Printf("[index] %s\n", token)
 		// }
 	}
+}
+
+func find(term string) ([]crawler.Message, error) {
+	var messages []crawler.Message
+	// keyVal := redis.NewKV()
+
+	ids := keyVal.GetKeys(term)
+	err := ids.Err()
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, id := range ids.Val() {
+		message := crawler.Message{}
+		val, err := keyVal.Get(id)
+
+		if err != nil {
+			return nil, err
+		}
+
+		json.Unmarshal(val, &message)
+
+		messages = append(messages, message)
+	}
+
+	return messages, nil
 }
 
 // Run Indexer service

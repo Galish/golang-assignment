@@ -16,10 +16,13 @@ func main() {
 	switch *service {
 	case "indexer":
 		indexer.Run()
+
 	case "crawler":
 		crawler.Run()
+
 	case "frontend":
 		frontend.Run()
+
 	default:
 		fmt.Println("Please specify a service to run:")
 		fmt.Println("$ go run main.go -service=indexer/crawler/frontend")
