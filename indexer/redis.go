@@ -1,4 +1,4 @@
-package redis
+package indexer
 
 import (
 	"github.com/go-redis/redis"

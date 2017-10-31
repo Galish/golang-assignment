@@ -1,4 +1,4 @@
-package main
+package indexer
 
 import (
 	"encoding/json"
@@ -6,23 +6,10 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Galish/golang-assignment/indexer/redis"
-	"github.com/Galish/golang-assignment/indexer/utils"
+	"github.com/Galish/golang-assignment/crawler"
 	"github.com/micro/go-micro/broker"
 	"github.com/micro/go-plugins/broker/rabbitmq"
 )
-
-type Message struct {
-	ID     int
-	Index  int
-	Link   string
-	Avatar string
-	Author string
-	Title  string
-	Date   string
-	HTML   string
-	Text   string
-}
 
 const (
 	amqpAddr = "amqp://localhost"
@@ -31,19 +18,19 @@ const (
 
 var (
 	amqpBroker broker.Broker
-	keyVal     redis.Rkv
+	keyVal     Rkv
 )
 
 func subscribe() {
 	fmt.Println("Broker listening:", amqpAddr)
 
 	_, err := amqpBroker.Subscribe(topic, func(p broker.Publication) error {
-		message := Message{}
+		message := crawler.Message{}
 		json.Unmarshal(p.Message().Body, &message)
 
 		fmt.Printf("[sub] received message #%d\n", message.ID)
 
-		key := utils.GetKey(message.ID)
+		key := getKey(message.ID)
 
 		put(key, p.Message().Body)
 		index(key, message.HTML)
@@ -67,20 +54,22 @@ func put(key string, value []byte) {
 }
 
 func index(key string, HTML string) {
-	tokens := utils.ParseTokens(strings.NewReader(HTML))
+	tokens := parseTokens(strings.NewReader(HTML))
 
 	for _, token := range tokens {
 		err := keyVal.Add(token, key)
 
 		if err != nil {
 			fmt.Println("index err", err)
-		} else {
-			fmt.Printf("[index] %s\n", token)
 		}
+		// else {
+		// 	fmt.Printf("[index] %s\n", token)
+		// }
 	}
 }
 
-func main() {
+// Run Indexer service
+func Run() {
 	// Initiate RabbitMQ broker
 	amqpBroker = rabbitmq.NewBroker(
 		broker.Addrs(amqpAddr),
@@ -95,7 +84,7 @@ func main() {
 	}
 
 	// Initiate Redis key-value storage
-	keyVal = redis.NewKV(
+	keyVal = NewKV(
 		"localhost:6379",
 		"",
 		0,

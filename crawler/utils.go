@@ -1,4 +1,4 @@
-package utils
+package crawler
 
 import (
 	"net/url"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func IsRobotsURL(u *url.URL) bool {
+func isRobotsURL(u *url.URL) bool {
 	const robotsTxtPath = "/robots.txt"
 
 	if u == nil {
@@ -16,15 +16,15 @@ func IsRobotsURL(u *url.URL) bool {
 	return strings.ToLower(u.Path) == robotsTxtPath
 }
 
-func IsTopic(u string) bool {
+func isTopic(u string) bool {
 	return strings.Contains(u, "/viewtopic.php?")
 }
 
-func IsForum(u string) bool {
+func isForum(u string) bool {
 	return strings.Contains(u, "/viewforum.php?")
 }
 
-func ParseDate(date string) string {
+func parseDate(date string) string {
 	// 2017-08-26 22:40:42
 
 	date = strings.TrimSpace(date)

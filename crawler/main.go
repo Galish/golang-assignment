@@ -1,4 +1,4 @@
-package main
+package crawler
 
 import (
 	"encoding/json"
@@ -12,12 +12,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Galish/golang-assignment/crawler/utils"
 	"github.com/PuerkitoBio/gocrawl"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/micro/go-micro/broker"
 	"github.com/micro/go-plugins/broker/rabbitmq"
 )
+
+type Message struct {
+	ID     int
+	Index  int
+	Link   string
+	Avatar string
+	Author string
+	Title  string
+	Date   string
+	HTML   string
+	Text   string
+}
 
 var (
 	postIndex          = 0
@@ -51,20 +62,8 @@ func (x *Extender) End(err error) {
 	fmt.Println("  posts:", topicIndex)
 }
 
-type Message struct {
-	ID     int
-	Index  int
-	Link   string
-	Avatar string
-	Author string
-	Title  string
-	Date   string
-	HTML   string
-	Text   string
-}
-
 func CheckRedirect(req *http.Request, via []*http.Request) error {
-	if utils.IsRobotsURL(req.URL) {
+	if isRobotsURL(req.URL) {
 		if len(via) >= 10 {
 			return errors.New("stopped after 10 redirects")
 		}
@@ -78,7 +77,7 @@ func CheckRedirect(req *http.Request, via []*http.Request) error {
 }
 
 func (x *Extender) Visit(ctx *gocrawl.URLContext, res *http.Response, doc *goquery.Document) (interface{}, bool) {
-	if utils.IsTopic(ctx.NormalizedURL().String()) {
+	if isTopic(ctx.NormalizedURL().String()) {
 		doc.Find(".post").Each(func(i int, item *goquery.Selection) {
 			permalink := item.Find(".posthead .post-link a.permalink")
 			link, _ := permalink.Attr("href")
@@ -98,7 +97,7 @@ func (x *Extender) Visit(ctx *gocrawl.URLContext, res *http.Response, doc *goque
 					Avatar: avatar,
 					Author: item.Find(".posthead .post-byline strong").Text(),
 					Title:  item.Find(".postbody .post-entry .entry-title").Text(),
-					Date:   utils.ParseDate(permalink.Text()),
+					Date:   parseDate(permalink.Text()),
 					HTML:   html,
 					Text:   content.Text(),
 				}
@@ -109,19 +108,17 @@ func (x *Extender) Visit(ctx *gocrawl.URLContext, res *http.Response, doc *goque
 					Header: map[string]string{
 						"Index": fmt.Sprintf("%d", postIndex),
 					},
-					// Body: []byte(fmt.Sprintf("%d: %s", i, time.Now().String())),
 					Body: messageJSON,
 				}
 
 				if err := amqpBroker.Publish(topic, msg); err != nil {
-					// if err := amqpBroker.Publish("test", msg); err != nil {
 					log.Printf("[pub] failed: %v", err)
 				} else {
 					fmt.Printf("[pub] pubbed message #%d (index: %d)\n", message.ID, message.Index)
 				}
 			}
 		})
-	} else if utils.IsForum(ctx.NormalizedURL().String()) {
+	} else if isForum(ctx.NormalizedURL().String()) {
 		doc.Find(".main-item .item-subject a").Each(func(i int, item *goquery.Selection) {
 			link, _ := item.Attr("href")
 			id, _ := strconv.Atoi(strings.Split(strings.Split(link, "id=")[1], "#")[0])
@@ -169,7 +166,8 @@ func (x *Extender) Fetch(ctx *gocrawl.URLContext, userAgent string, headRequest 
 	return httpClient.Do(req)
 }
 
-func main() {
+// Run Crawler service
+func Run() {
 	// Initiate RabbitMQ broker
 	amqpBroker = rabbitmq.NewBroker(
 		broker.Addrs(amqpAddr),
@@ -183,7 +181,7 @@ func main() {
 		log.Fatalf("Broker Connect error: %v", err)
 	}
 
-	fmt.Println("Indexer service is running")
+	fmt.Println("Crawler service is running")
 
 	// Run crawler
 	opts := gocrawl.NewOptions(new(Extender))
