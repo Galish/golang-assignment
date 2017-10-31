@@ -81,7 +81,7 @@ func index(key string, HTML string) {
 }
 
 func main() {
-	// Initiate RabbitMQ brooker
+	// Initiate RabbitMQ broker
 	amqpBroker = rabbitmq.NewBroker(
 		broker.Addrs(amqpAddr),
 	)
