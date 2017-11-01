@@ -1,0 +1,58 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+body {
+	font-family: sans-serif;
+	font-size: 15px;
+	color: #333;
+	background: #fff;
+	padding: 20px;
+}
+body a {
+	color: #04688E;
+}
+
+.form {
+	background: #ebebeb;
+	margin-bottom: 20px;
+	padding: 20px;
+}
+.form input {
+	outline: none;
+}
+
+.message {
+	min-height: 20px;
+	font-size: 14px;
+	border-top: 1px solid #ebebeb;
+	padding: 10px 0;
+}
+.message__title {
+	font-size: 18px;
+	display: block;
+	margin-bottom: 5px;
+}
+.message__date {
+	float: right;
+	font-size: 11px;
+	color: #999;
+	display: block;
+	margin-top: 5px;
+}
+.message__author {
+	font-size: 13px;
+	color: #666;
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+.message__link {
+	font-size: 11px;
+}
+
+.error {
+	background: red;
+	color: white;
+	text-align: center;
+	padding: 10px;
+}
