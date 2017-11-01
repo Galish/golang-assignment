@@ -1,7 +1,6 @@
 package frontend
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -13,7 +12,11 @@ import (
 
 // var amqpTransport transport.Transport
 // var amqpClient transport.Client
-var amqpBroker broker.Broker
+var (
+	amqpBroker broker.Broker
+	// srchCh     = make(chan Query)
+	// rsltCh     = make(chan Search)
+)
 
 const (
 	amqpAddr    = "amqp://localhost"
@@ -21,54 +24,12 @@ const (
 )
 
 type Search struct {
-	Term   string
-	Result []crawler.Message
+	Term   string            `json:"term"`
+	Result []crawler.Message `json:"result"`
 }
 
-func pub() {
-	id := "12345"
-	term := "all"
-
-	search := Search{
-		Term:   term,
-		Result: nil,
-	}
-	searchJSON, _ := json.Marshal(search)
-
-	msg := &broker.Message{
-		Header: map[string]string{
-			"ID": id,
-		},
-		Body: searchJSON,
-	}
-
-	if err := amqpBroker.Publish(topicSearch, msg); err != nil {
-		log.Printf("[pub] failed: %v", err)
-	} else {
-		fmt.Printf("[pub] pubbed search term #%s \"%s\"\n", id, term)
-	}
-}
-
-func sub() {
-	_, err := amqpBroker.Subscribe(topicSearch, func(p broker.Publication) error {
-		search := Search{}
-		json.Unmarshal(p.Message().Body, &search)
-		id := p.Message().Header["ID"]
-		term := search.Term
-		res := search.Result
-
-		if res == nil {
-			return nil
-		}
-
-		log.Printf("[sub] received search results #%s \"%s\" (%d)\n", id, term, len(res))
-
-		return nil
-	})
-
-	if err != nil {
-		fmt.Println(err)
-	}
+type Query struct {
+	Search string `json:"search"`
 }
 
 // Run Frontend service
@@ -88,8 +49,12 @@ func Run() {
 
 	fmt.Println("Frontend service is running")
 
-	sub()
-	pub()
+	sCh := make(chan Query)
+	rCh := make(chan Search)
+
+	go serveWS(sCh, rCh)
+	go pub(sCh)
+	go sub(rCh)
 
 	select {}
 }

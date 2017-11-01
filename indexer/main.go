@@ -23,10 +23,11 @@ var (
 	keyVal     Rkv
 )
 
-func subscribe() {
+func sub() {
 	fmt.Println("Broker listening:", amqpAddr)
+	var subErr error
 
-	_, err := amqpBroker.Subscribe(topicCrawler, func(p broker.Publication) error {
+	_, subErr = amqpBroker.Subscribe(topicCrawler, func(p broker.Publication) error {
 		message := crawler.Message{}
 		json.Unmarshal(p.Message().Body, &message)
 
@@ -34,18 +35,17 @@ func subscribe() {
 
 		key := getKey(message.ID)
 
-		put(key, p.Message().Body)
+		put(message.ID, key, p.Message().Body)
 		index(key, message.HTML)
 
 		return nil
 	})
 
-	if err != nil {
-		fmt.Println(err)
+	if subErr != nil {
+		fmt.Println(subErr)
 	}
 
-	// _, err :=
-	amqpBroker.Subscribe(topicSearch, func(p broker.Publication) error {
+	_, subErr = amqpBroker.Subscribe(topicSearch, func(p broker.Publication) error {
 		search := frontend.Search{}
 		json.Unmarshal(p.Message().Body, &search)
 		id := p.Message().Header["ID"]
@@ -62,6 +62,7 @@ func subscribe() {
 
 		if err != nil {
 			fmt.Println("search error:", err)
+			return err
 		}
 
 		result := frontend.Search{
@@ -86,18 +87,18 @@ func subscribe() {
 		return nil
 	})
 
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
+	if subErr != nil {
+		fmt.Println(subErr)
+	}
 }
 
-func put(key string, value []byte) {
+func put(id int, key string, value []byte) {
 	err := keyVal.Put(key, value)
 
 	if err != nil {
 		fmt.Println("put err", err)
 	} else {
-		fmt.Printf("[put] #%s\n", key)
+		fmt.Printf("[put] #%d\n", id)
 	}
 }
 
@@ -117,8 +118,9 @@ func index(key string, HTML string) {
 }
 
 func find(term string) ([]crawler.Message, error) {
-	var messages []crawler.Message
+	// var messages []crawler.Message
 	// keyVal := redis.NewKV()
+	messages := []crawler.Message{}
 
 	ids := keyVal.GetKeys(term)
 	err := ids.Err()
@@ -167,7 +169,7 @@ func Run() {
 
 	fmt.Println("Indexer service is running")
 
-	subscribe()
+	sub()
 
 	select {}
 }
