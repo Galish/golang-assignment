@@ -1,22 +1,11 @@
 package frontend
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/Galish/golang-assignment/crawler"
 	"github.com/micro/go-micro/broker"
-	"github.com/micro/go-plugins/broker/rabbitmq"
-	// "github.com/micro/go-plugins/transport/rabbitmq"
 )
 
-// var amqpTransport transport.Transport
-// var amqpClient transport.Client
-var (
-	amqpBroker broker.Broker
-	// srchCh     = make(chan Query)
-	// rsltCh     = make(chan Search)
-)
+var amqpBroker broker.Broker
 
 const (
 	amqpAddr    = "amqp://localhost"
@@ -34,27 +23,13 @@ type Query struct {
 
 // Run Frontend service
 func Run() {
-	// Initiate RabbitMQ broker
-	amqpBroker = rabbitmq.NewBroker(
-		broker.Addrs(amqpAddr),
-	)
-
-	if err := amqpBroker.Init(); err != nil {
-		log.Fatalf("Broker Init error: %v", err)
-	}
-
-	if err := amqpBroker.Connect(); err != nil {
-		log.Fatalf("Broker Connect error: %v", err)
-	}
-
-	fmt.Println("Frontend service is running")
+	runBroker()
 
 	sCh := make(chan Query)
 	rCh := make(chan Search)
 
-	go serveWS(sCh, rCh)
 	go pub(sCh)
 	go sub(rCh)
 
-	select {}
+	serveWS(sCh, rCh)
 }
