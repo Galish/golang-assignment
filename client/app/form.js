@@ -1,3 +1,5 @@
+import uuid  from 'node-uuid'
+
 export default class Form extends React.PureComponent {
 	static propTypes = {
 		isWSReady: React.PropTypes.bool.isRequired,
@@ -45,8 +47,16 @@ export default class Form extends React.PureComponent {
 
 		if (!isWSReady) return
 
+		const term = input.toLowerCase()
+		const terms = term.split(" ").map(term => ({term}))
+		const search = {
+			or: terms
+		}
+
 		this.props.onSend({
-			search: input.toLowerCase()
+			id: uuid.v4(),
+			search,
+			term
 		})
 	}
 

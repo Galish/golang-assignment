@@ -1,4 +1,3 @@
-// import config from '../../config'
 import Content from './content'
 import WSController from './wscontroller'
 const port = '8100'

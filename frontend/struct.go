@@ -8,21 +8,24 @@ import (
 
 type Broker struct {
 	instance broker.Broker
-	chSearch chan Query
-	chReslt  chan Search
 }
 
 type WS struct {
-	conn     *websocket.Conn
-	chSearch chan Query
-	chReslt  chan Search
+	conn *websocket.Conn
 }
 
-type Search struct {
+type SearchResult struct {
+	ID     string            `json:"id"`
 	Term   string            `json:"term"`
 	Result []crawler.Message `json:"result"`
 }
 
-type Query struct {
-	Search string `json:"search"`
+type SearchQuery struct {
+	ID     string                  `json:"id"`
+	Term   string                  `json:"term"`
+	Search map[string][]SearchTerm `json:"search"`
+}
+
+type SearchTerm struct {
+	Term string `json:"term"`
 }

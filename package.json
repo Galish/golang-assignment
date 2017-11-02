@@ -6,21 +6,22 @@
   "scripts": {
     "amqp": "rabbitmq-server —start",
     "redis": "redis-server",
-	"tor": "tor",
-	"polipo": "polipo socksParentProxy=localhost:9050",
+    "tor": "tor",
+    "polipo": "polipo socksParentProxy=localhost:9050",
     "consul": "consul agent -dev",
-	"env": "npm-run-all --parallel amqp redis tor polipo consul",
+    "env": "npm-run-all --parallel amqp redis tor polipo consul",
     "client": "http-server ./client/public -p 8000",
     "client:dev": "NODE_ENV=development webpack-dev-server --config client/webpack.config.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-      "moment": "^2.18.1",
-      "npm-run-all": "^4.1.1",
-      "react": "^15.6.1",
-      "react-dom": "^15.6.1",
-      "redis-server": "^1.1.0"
+    "moment": "^2.18.1",
+    "node-uuid": "^1.4.8",
+    "npm-run-all": "^4.1.1",
+    "react": "^15.6.1",
+    "react-dom": "^15.6.1",
+    "redis-server": "^1.1.0"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",

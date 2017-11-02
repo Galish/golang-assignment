@@ -25,22 +25,13 @@ func (b *Broker) init() {
 	fmt.Println("> Frontend service is running")
 
 	b.instance = amqpBroker
-	b.chSearch = make(chan Query)
-	b.chReslt = make(chan Search)
 }
 
-func (b *Broker) pub() {
+func (b *Broker) pub(ch <-chan SearchQuery) {
 	for {
-		query := <-b.chSearch
-		id := "12345" // TODO: add ID to search query
-		term := query.Search
+		query := <-ch
 
-		search := Search{
-			Term:   term,
-			Result: nil,
-		}
-
-		searchJSON, err := json.Marshal(search)
+		queryJSON, err := json.Marshal(query)
 
 		if err != nil {
 			fmt.Println(err)
@@ -48,36 +39,42 @@ func (b *Broker) pub() {
 
 		msg := &broker.Message{
 			Header: map[string]string{
-				"ID": id,
+				"Action": "search",
 			},
-			Body: searchJSON,
+			Body: queryJSON,
 		}
+
+		fmt.Printf("!!!!!%+v\n", query)
 
 		if err := b.instance.Publish(topicSearch, msg); err != nil {
 			fmt.Printf("[pub] failed: %v", err)
 		} else {
-			fmt.Printf("[pub] pubbed search term #%s \"%s\"\n", id, term)
+			// fmt.Printf("[pub] pubbed search term #%s \"%s\"\n", id, term)
+			fmt.Printf("[pub] pubbed search term \"%s\"\n", query.Term)
 		}
 	}
 }
 
-func (b *Broker) sub() {
+func (b *Broker) sub(ch chan<- SearchResult) {
 	fmt.Println("> Broker listening:", amqpAddr)
 
 	_, err := b.instance.Subscribe(topicSearch, func(p broker.Publication) error {
-		search := Search{}
-		json.Unmarshal(p.Message().Body, &search)
-		id := p.Message().Header["ID"]
-		term := search.Term
-		res := search.Result
-
-		if res == nil {
+		if p.Message().Header["Action"] != "result" {
 			return nil
 		}
 
-		fmt.Printf("[sub] received search results #%s \"%s\" (%d)\n", id, term, len(res))
+		res := SearchResult{}
 
-		b.chReslt <- search
+		json.Unmarshal(p.Message().Body, &res)
+
+		if res.Result == nil {
+			return nil
+		}
+
+		// fmt.Printf("[sub] received search results #%s \"%s\" (%d)\n", id, term, len(result))
+		fmt.Printf("[sub] received search results \"%s\" (%d)\n", res.Term, len(res.Result))
+
+		ch <- res
 
 		return nil
 	})

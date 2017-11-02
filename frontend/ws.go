@@ -17,11 +17,19 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (ws *WS) init(broker Broker) {
-	http.HandleFunc("/", ws.upgrade)
+func (ws *WS) init(chSearch chan SearchQuery, chResult chan SearchResult) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		ws.conn, err = upgrader.Upgrade(w, r, nil)
 
-	ws.chSearch = broker.chSearch
-	ws.chReslt = broker.chReslt
+		if err != nil {
+			log.Print("upgrade:", err)
+			return
+		}
+
+		go ws.sub(chSearch)
+		go ws.pub(chResult)
+	})
 }
 
 func (ws *WS) serve() {
@@ -33,20 +41,7 @@ func (ws *WS) serve() {
 	}
 }
 
-func (ws *WS) upgrade(w http.ResponseWriter, r *http.Request) {
-	var err error
-	ws.conn, err = upgrader.Upgrade(w, r, nil)
-
-	if err != nil {
-		log.Print("upgrade:", err)
-		return
-	}
-
-	go ws.sub()
-	go ws.pub()
-}
-
-func (ws *WS) sub() {
+func (ws *WS) sub(ch chan<- SearchQuery) {
 	for {
 		_, message, err := ws.conn.ReadMessage()
 
@@ -57,18 +52,22 @@ func (ws *WS) sub() {
 			break
 		}
 
-		query := Query{}
+		query := SearchQuery{}
 
 		json.Unmarshal(message, &query)
-		fmt.Printf("[ws/sub] received search term \"%s\"\n", query.Search)
+		fmt.Printf("[ws/sub] received search term \"%s\"\n", query.Term)
 
-		ws.chSearch <- query
+		// fmt.Printf("WS message: %+v\n", message)
+		// fmt.Printf("WS query: %+v\n", query)
+		// fmt.Println("WS query search:", query.Search)
+
+		ch <- query
 	}
 }
 
-func (ws *WS) pub() {
+func (ws *WS) pub(ch <-chan SearchResult) {
 	for {
-		res := <-ws.chReslt
+		res := <-ch
 		data, _ := json.Marshal(res)
 		err := ws.conn.WriteMessage(1, data)
 

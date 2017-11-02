@@ -5,10 +5,13 @@ func Run() {
 	broker := Broker{}
 	ws := WS{}
 
-	broker.init()
-	go broker.pub()
-	go broker.sub()
+	chSearch := make(chan SearchQuery)
+	chReslt := make(chan SearchResult)
 
-	ws.init(broker)
+	broker.init()
+	go broker.pub(chSearch)
+	go broker.sub(chReslt)
+
+	ws.init(chSearch, chReslt)
 	ws.serve()
 }

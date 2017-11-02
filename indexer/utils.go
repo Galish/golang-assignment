@@ -64,3 +64,55 @@ func isValidURL(toTest string) bool {
 func getKey(value int) string {
 	return fmt.Sprintf("id#%d", value)
 }
+
+func inter(slices [][]string) []string {
+	items := make(map[string]bool)
+	res := []string{}
+
+	for i, slice := range slices {
+		for _, key := range slice {
+			for m, _slice := range slices {
+				if i != m {
+					ct := contains(_slice, key)
+
+					if _, ok := items[key]; ok == false {
+						items[key] = ct
+					} else if items[key] == true && ct == false {
+						items[key] = false
+					}
+				}
+			}
+		}
+	}
+
+	for key := range items {
+		if items[key] == true {
+			res = append(res, key)
+		}
+	}
+
+	return res
+}
+
+func merge(slices [][]string) []string {
+	res := []string{}
+
+	for _, slice := range slices {
+		for _, item := range slice {
+			if contains(res, item) == false {
+				res = append(res, item)
+			}
+		}
+	}
+
+	return res
+}
+
+func contains(arr []string, str string) bool {
+	for _, a := range arr {
+		if a == str {
+			return true
+		}
+	}
+	return false
+}
