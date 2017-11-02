@@ -9,8 +9,8 @@ import (
 	"github.com/micro/go-plugins/broker/rabbitmq"
 )
 
-func runBroker() {
-	amqpBroker = rabbitmq.NewBroker(
+func (b *Broker) init() {
+	amqpBroker := rabbitmq.NewBroker(
 		broker.Addrs(amqpAddr),
 	)
 
@@ -22,16 +22,17 @@ func runBroker() {
 		log.Fatalf("Broker Connect error: %v", err)
 	}
 
-	fmt.Println("Frontend service is running")
+	fmt.Println("> Frontend service is running")
+
+	b.instance = amqpBroker
+	b.chSearch = make(chan Query)
+	b.chReslt = make(chan Search)
 }
 
-func pub(ch <-chan Query) {
+func (b *Broker) pub() {
 	for {
-		// fmt.Println("PUB+++", <-srchCh)
-		query := <-ch
-		fmt.Println("!!!", query)
-
-		id := "12345"
+		query := <-b.chSearch
+		id := "12345" // TODO: add ID to search query
 		term := query.Search
 
 		search := Search{
@@ -52,7 +53,7 @@ func pub(ch <-chan Query) {
 			Body: searchJSON,
 		}
 
-		if err := amqpBroker.Publish(topicSearch, msg); err != nil {
+		if err := b.instance.Publish(topicSearch, msg); err != nil {
 			fmt.Printf("[pub] failed: %v", err)
 		} else {
 			fmt.Printf("[pub] pubbed search term #%s \"%s\"\n", id, term)
@@ -60,10 +61,10 @@ func pub(ch <-chan Query) {
 	}
 }
 
-func sub(ch chan<- Search) {
-	fmt.Println("Broker listening:", amqpAddr)
+func (b *Broker) sub() {
+	fmt.Println("> Broker listening:", amqpAddr)
 
-	_, err := amqpBroker.Subscribe(topicSearch, func(p broker.Publication) error {
+	_, err := b.instance.Subscribe(topicSearch, func(p broker.Publication) error {
 		search := Search{}
 		json.Unmarshal(p.Message().Body, &search)
 		id := p.Message().Header["ID"]
@@ -76,7 +77,7 @@ func sub(ch chan<- Search) {
 
 		fmt.Printf("[sub] received search results #%s \"%s\" (%d)\n", id, term, len(res))
 
-		ch <- search
+		b.chReslt <- search
 
 		return nil
 	})

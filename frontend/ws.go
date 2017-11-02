@@ -9,69 +9,74 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const addr string = "localhost:8100"
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
-var (
-	upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-	ws *websocket.Conn
-)
+func (ws *WS) init(broker Broker) {
+	http.HandleFunc("/", ws.upgrade)
 
-func serveWS(ch1 chan Query, ch2 chan Search) {
-	fmt.Println("WS server running at:", addr)
+	ws.chSearch = broker.chSearch
+	ws.chReslt = broker.chReslt
+}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		ws, err = upgrader.Upgrade(w, r, nil)
+func (ws *WS) serve() {
+	fmt.Println("> WS server running at:", wsAddr)
 
-		if err != nil {
-			log.Print("upgrade:", err)
-			return
-		}
-
-		go subWS(ch1)
-		go pubWS(ch2)
-	})
-
-	err := http.ListenAndServe(addr, nil)
+	err := http.ListenAndServe(wsAddr, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
 
-func subWS(ch chan<- Query) {
+func (ws *WS) upgrade(w http.ResponseWriter, r *http.Request) {
+	var err error
+	ws.conn, err = upgrader.Upgrade(w, r, nil)
+
+	if err != nil {
+		log.Print("upgrade:", err)
+		return
+	}
+
+	go ws.sub()
+	go ws.pub()
+}
+
+func (ws *WS) sub() {
 	for {
-		_, message, err := ws.ReadMessage()
+		_, message, err := ws.conn.ReadMessage()
 
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-				log.Printf("!!!error: %v", err)
+				log.Printf("%v", err)
 			}
 			break
 		}
 
 		query := Query{}
-		json.Unmarshal(message, &query)
 
-		fmt.Println("query:", query, query.Search)
-		ch <- query
+		json.Unmarshal(message, &query)
+		fmt.Printf("[ws/sub] received search term \"%s\"\n", query.Search)
+
+		ws.chSearch <- query
 	}
 }
 
-func pubWS(ch <-chan Search) {
+func (ws *WS) pub() {
 	for {
-		res := <-ch
+		res := <-ws.chReslt
 		data, _ := json.Marshal(res)
-		err := ws.WriteMessage(1, data)
+		err := ws.conn.WriteMessage(1, data)
 
 		if err != nil {
 			fmt.Println(err)
 			break
 		}
+
+		fmt.Printf("[ws/pub] pubbed search \"%s\" results \n", res.Term)
 	}
 }
