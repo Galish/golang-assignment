@@ -11,7 +11,8 @@
     "consul": "consul agent -dev",
     "env": "npm-run-all --parallel amqp redis tor polipo consul",
     "client": "http-server ./client/public -p 8000",
-    "client:dev": "NODE_ENV=development webpack-dev-server --config client/webpack.config.js"
+    "client:dev": "NODE_ENV=development webpack-dev-server --config client/webpack.config.js",
+    "client:build": "NODE_ENV=production webpack --config client/webpack.config.js"
   },
   "author": "",
   "license": "ISC",
