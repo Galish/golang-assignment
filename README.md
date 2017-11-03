@@ -33,7 +33,7 @@ ${GOPATH}/bin/golang-assignment -service=frontend
 npm run client
 ```
 
-# Development
+### Development
 
 ```bash
 # Run microservice
