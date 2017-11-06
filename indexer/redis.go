@@ -48,18 +48,20 @@ func put(id int, key string, value []byte) {
 	}
 }
 
-func index(key string, HTML string) {
-	tokens := parseTokens(strings.NewReader(HTML))
+func index(key string, texts []string) {
+	for _, text := range texts {
+		tokens := parseTokens(strings.NewReader(text))
 
-	for _, token := range tokens {
-		err := keyVal.Add(token, key)
+		for _, token := range tokens {
+			err := keyVal.Add(token, key)
 
-		if err != nil {
-			fmt.Println("index err", err)
+			if err != nil {
+				fmt.Println("index err", err)
+			}
+			//  else {
+			// 	fmt.Printf("[index] %s - %s\n", token, key)
+			// }
 		}
-		// else {
-		// 	fmt.Printf("[index] %s\n", token)
-		// }
 	}
 }
 

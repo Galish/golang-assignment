@@ -56,7 +56,7 @@ func (b *Broker) sub() {
 
 func (b *Broker) subCrawler() error {
 	_, err := b.instance.Subscribe(topicCrawler, func(p broker.Publication) error {
-		// TODO: add action header
+		// TODO: add header
 		message := crawler.Message{}
 		json.Unmarshal(p.Message().Body, &message)
 
@@ -65,7 +65,7 @@ func (b *Broker) subCrawler() error {
 		key := getKey(message.ID)
 
 		put(message.ID, key, p.Message().Body)
-		index(key, message.HTML)
+		index(key, []string{message.Title, message.HTML})
 
 		return nil
 	})

@@ -44,8 +44,6 @@ func (b *Broker) pub(ch <-chan SearchQuery) {
 			Body: queryJSON,
 		}
 
-		fmt.Printf("!!!!!%+v\n", query)
-
 		if err := b.instance.Publish(topicSearch, msg); err != nil {
 			fmt.Printf("[pub] failed: %v", err)
 		} else {

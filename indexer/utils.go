@@ -69,6 +69,10 @@ func inter(slices [][]string) []string {
 	items := make(map[string]bool)
 	res := []string{}
 
+	if len(slices) == 1 {
+		return slices[0]
+	}
+
 	for i, slice := range slices {
 		for _, key := range slice {
 			for m, _slice := range slices {
