@@ -1,4 +1,5 @@
 import uuid  from 'node-uuid'
+import {parseHTML} from './parser'
 
 export default class Form extends React.PureComponent {
 	static propTypes = {
@@ -48,10 +49,7 @@ export default class Form extends React.PureComponent {
 		if (!isWSReady) return
 
 		const term = input.toLowerCase()
-		const terms = term.split(" ").map(term => ({term}))
-		const search = {
-			or: terms
-		}
+		const {expression: search} = parseHTML(term)
 
 		this.props.onSend({
 			id: uuid.v4(),
