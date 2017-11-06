@@ -42,9 +42,10 @@ func put(id int, key string, value []byte) {
 
 	if err != nil {
 		fmt.Println("put err", err)
-	} else {
-		fmt.Printf("[put] #%d\n", id)
 	}
+	//  else {
+	// 	fmt.Printf("[put] #%d\n", id)
+	// }
 }
 
 func index(key string, texts []string) {

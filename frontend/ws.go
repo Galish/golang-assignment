@@ -9,6 +9,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type WS struct {
+	conn *websocket.Conn
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,

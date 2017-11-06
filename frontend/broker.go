@@ -9,6 +9,10 @@ import (
 	"github.com/micro/go-plugins/broker/rabbitmq"
 )
 
+type Broker struct {
+	instance broker.Broker
+}
+
 func (b *Broker) init() {
 	amqpBroker := rabbitmq.NewBroker(
 		broker.Addrs(amqpAddr),

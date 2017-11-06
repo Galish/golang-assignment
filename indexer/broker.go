@@ -96,7 +96,7 @@ func (b *Broker) subSearch() error {
 			return err
 		}
 
-		fmt.Println("search done:", len(result))
+		// fmt.Println("search done:", len(result))
 
 		data := Data{
 			Result: result,
