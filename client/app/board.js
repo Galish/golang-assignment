@@ -53,11 +53,40 @@ export default class Board extends React.PureComponent {
 		return null
 	}
 
+	renderResultsCount = () => {
+		if (!this.messages.length) return null
+
+		return (
+			<p className="count">
+				Messages found: <b>{this.messages.length}</b>
+			</p>
+		)
+	}
+
+	formatText = (html) => {
+		const repl = '$br$'
+		const arr = ['<br>', '<br \/>', '<br\/>', '<\/p>']
+
+		return this.replaceArray(html, arr, repl)
+			.replace(/<(?:.|\n)*?>/g, '')
+			.split(repl).join('<br />')
+	}
+
+	replaceArray = (replaceString, find, repl) => {
+		find.forEach(f => {
+			const regex = new RegExp(f, 'g')
+			replaceString = replaceString.replace(regex, repl)
+		})
+
+		return replaceString
+  }
+
 	render() {
-		console.log('UPDATE:', this.props.update);
 		return (
 			<div>
 				{this.renderNotification()}
+
+				{this.renderResultsCount()}
 
 				{this.messages.map((message, i) =>
 					<div className="message"
@@ -65,13 +94,16 @@ export default class Board extends React.PureComponent {
 						<div className="message__date">
 							{moment(message.date).format('LLL')}
 						</div>
+						
 						<div className="message__title">
 							{message.title}
 						</div>
+
 						<div className="message__content"
 							dangerouslySetInnerHTML={{
-								__html: message.html
+								__html: this.formatText(message.html)
 							}} />
+
 						<div className="message__author">
 							{/*<img src={message.avatar} />*/}
 							Author: <b>{message.author}</b>
