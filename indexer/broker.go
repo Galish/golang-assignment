@@ -88,9 +88,8 @@ func (b *Broker) subSearch() error {
 		json.Unmarshal(p.Message().Body, &query)
 
 		fmt.Printf("[sub] received search term #%s \"%s\"\n", query.ID, query.Term)
-		// fmt.Printf("!!!!!%+v\n", query)
+
 		result, err := find(query.Search)
-		// result, err := find(query.Term)
 
 		if err != nil {
 			fmt.Println("search error:", err)

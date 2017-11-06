@@ -21,9 +21,9 @@ type SearchResult struct {
 }
 
 type SearchQuery struct {
-	ID     string                  `json:"id"`
-	Term   string                  `json:"term"`
-	Search map[string][]SearchTerm `json:"search"`
+	ID     string      `json:"id"`
+	Term   string      `json:"term"`
+	Search interface{} `json:"search"`
 }
 
 type SearchTerm struct {

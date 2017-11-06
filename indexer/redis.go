@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/Galish/golang-assignment/crawler"
-	"github.com/Galish/golang-assignment/frontend"
 	"github.com/go-redis/redis"
 )
 
@@ -65,26 +64,9 @@ func index(key string, texts []string) {
 	}
 }
 
-func find(search map[string][]frontend.SearchTerm) ([]crawler.Message, error) {
+func find(search interface{}) ([]crawler.Message, error) {
 	messages := []crawler.Message{}
-	termIDs := make(map[string][]string)
-
-	for key := range search {
-		for i := range search[key] {
-			term := search[key][i].Term
-			ids := keyVal.GetKeys(term)
-			err := ids.Err()
-
-			if err != nil {
-				fmt.Println(err)
-				break
-			}
-
-			termIDs[term] = ids.Val()
-		}
-	}
-
-	ids := getIDs(termIDs, "and")
+	ids, _ := findIDs(search)
 
 	for _, id := range ids {
 		message := crawler.Message{}
@@ -102,13 +84,48 @@ func find(search map[string][]frontend.SearchTerm) ([]crawler.Message, error) {
 	return messages, nil
 }
 
-func getIDs(termIDs map[string][]string, exp string) []string {
-	var slices [][]string
+func findIDs(s interface{}) ([]string, []string) {
+	m := s.(map[string]interface{})
 
-	for term := range termIDs {
-		slices = append(slices, termIDs[term])
+	for k, v := range m {
+		switch vv := v.(type) {
+		case string:
+			if k == "term" {
+				keys := keyVal.GetKeys(vv)
+				err := keys.Err()
+
+				if err != nil {
+					fmt.Println(err)
+					break
+				}
+
+				terms := keys.Val()
+
+				return nil, terms
+			}
+		case []interface{}:
+			terms := [][]string{}
+
+			for _, i := range vv {
+				_ids, _terms := findIDs(i)
+
+				if _ids != nil {
+					terms = append(terms, _ids)
+				} else {
+					terms = append(terms, _terms)
+				}
+			}
+
+			ids := getIDs(terms, k)
+
+			return ids, nil
+		}
 	}
 
+	return nil, nil
+}
+
+func getIDs(slices [][]string, exp string) []string {
 	switch exp {
 	case "or":
 		return merge(slices)
