@@ -28,6 +28,4 @@ func Run() {
 
 	crawler.init()
 	crawler.run()
-
-	// select {}
 }
