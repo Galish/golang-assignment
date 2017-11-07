@@ -12,26 +12,24 @@ import (
 
 	"github.com/PuerkitoBio/gocrawl"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/micro/go-micro/broker"
 )
 
 type Crawler struct {
 	instance *gocrawl.Crawler
 }
 
+type Extender struct {
+	gocrawl.DefaultExtender
+}
+
 var (
 	postIndex          = 0
 	postIds            = make(map[int]bool)
-	amqpBroker         broker.Broker
 	topicIndex         = 0
 	topicIds           = make(map[int]bool)
 	rxOk               = regexp.MustCompile(`(http|https)://x7bwsmcore5fmx56.onion`)
 	errEnqueueRedirect = errors.New("redirection not followed")
 )
-
-type Extender struct {
-	gocrawl.DefaultExtender
-}
 
 func (x *Extender) Start(seeds interface{}) interface{} {
 	fmt.Println("> Crawling process started")
@@ -137,13 +135,12 @@ func (x *Extender) Fetch(ctx *gocrawl.URLContext, userAgent string, headRequest 
 
 func (c *Crawler) init() {
 	opts := gocrawl.NewOptions(new(Extender))
-	// opts := gocrawl.NewOptions(ext)
 	opts.CrawlDelay = 1 * time.Second
 	opts.SameHostOnly = true
 	// opts.RobotUserAgent = "APIs-Google"
 	// opts.UserAgent = "Mozilla/5.0 (compatible; Example/1.0; +http://example.com)"
 	// opts.LogFlags = gocrawl.LogAll
-	opts.MaxVisits = 100
+	// opts.MaxVisits = 100
 
 	c.instance = gocrawl.NewCrawlerWithOptions(opts)
 }
