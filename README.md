@@ -13,7 +13,7 @@ cd ${GOPATH}/src/github.com/Galish/golang-assignment
 # install NodeJS dependencies
 npm i
 
-# run amqp, redis-server, tor, polipo and consul
+# run rabbitmq-server, redis-server, tor, polipo and consul
 npm run env
 ```
 
