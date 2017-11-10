@@ -10,30 +10,42 @@ import (
 )
 
 type Broker struct {
-	instance broker.Broker
+	AmqpAddr   string
+	AmqpBroker broker.Broker
+	Messages   chan Message
 }
 
-func (b *Broker) init() {
+func NewBroker(amqpAddr string, messageChan chan Message) *Broker {
 	amqpBroker := rabbitmq.NewBroker(
 		broker.Addrs(amqpAddr),
 	)
+	return &Broker{
+		AmqpAddr:   amqpAddr,
+		AmqpBroker: amqpBroker,
+		Messages:   messageChan,
+	}
+}
 
-	if err := amqpBroker.Init(); err != nil {
+func (b *Broker) Run() {
+	b.init()
+	go b.pub()
+}
+
+func (b *Broker) init() {
+	if err := b.AmqpBroker.Init(); err != nil {
 		log.Fatalf("Broker Init error: %v", err)
 	}
 
-	if err := amqpBroker.Connect(); err != nil {
+	if err := b.AmqpBroker.Connect(); err != nil {
 		log.Fatalf("Broker Connect error: %v", err)
 	}
 
-	fmt.Println("Broker is running at:", amqpAddr)
-
-	b.instance = amqpBroker
+	fmt.Println("Broker is running at:", b.AmqpAddr)
 }
 
 func (b *Broker) pub() {
 	for {
-		message := <-ch
+		message := <-b.Messages
 		messageJSON, _ := json.Marshal(message)
 
 		msg := &broker.Message{
@@ -43,7 +55,7 @@ func (b *Broker) pub() {
 			Body: messageJSON,
 		}
 
-		if err := b.instance.Publish(topic, msg); err != nil {
+		if err := b.AmqpBroker.Publish(topic, msg); err != nil {
 			log.Printf("[pub] failed: %v", err)
 		} else {
 			fmt.Printf("[pub] pubbed message #%d (index: %d)\n", message.ID, message.Index)
