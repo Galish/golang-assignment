@@ -6,9 +6,13 @@ import (
 	"time"
 )
 
-func isRobotsURL(u *url.URL) bool {
-	const robotsTxtPath = "/robots.txt"
+const (
+	robotsTxtPath = "/robots.txt"
+	forumPath     = "/viewtopic.php?"
+	topicPath     = "/viewtopic.php?"
+)
 
+func isRobotsURL(u *url.URL) bool {
 	if u == nil {
 		return false
 	}
@@ -17,16 +21,15 @@ func isRobotsURL(u *url.URL) bool {
 }
 
 func isTopic(u string) bool {
-	return strings.Contains(u, "/viewtopic.php?")
+	return strings.Contains(u, topicPath)
 }
 
 func isForum(u string) bool {
-	return strings.Contains(u, "/viewforum.php?")
+	return strings.Contains(u, forumPath)
 }
 
 func parseDate(date string) string {
 	// 2017-08-26 22:40:42
-
 	date = strings.TrimSpace(date)
 	dateArr := strings.Split(date, " ")
 
@@ -46,6 +49,5 @@ func parseDate(date string) string {
 	if err != nil {
 		panic(err)
 	}
-
 	return t.UTC().Format(time.RFC3339)
 }
